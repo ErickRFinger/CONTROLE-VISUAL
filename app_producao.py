@@ -30,28 +30,8 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Por favor, faça login para acessar esta página.'
 
-@login_manager.user_loader
-def load_user(user_id):
-    """Carrega usuário para o Flask-Login"""
-    try:
-        if SUPABASE_AVAILABLE:
-            return Usuario.get_by_id(user_id)
-        else:
-            # Usuário mock para desenvolvimento
-            class MockUser:
-                def __init__(self, user_id):
-                    self.id = user_id
-                    self.is_authenticated = True
-                    self.is_active = True
-                    self.is_anonymous = False
-                
-                def get_id(self):
-                    return str(self.id)
-            
-            return MockUser(user_id)
-    except Exception as e:
-        logger.error(f"Erro ao carregar usuário {user_id}: {e}")
-        return None
+# Variável global para controlar disponibilidade do Supabase
+SUPABASE_AVAILABLE = False
 
 # Importações com tratamento de erro
 try:
@@ -92,6 +72,29 @@ except Exception as e:
     Usuario = Cliente = Categoria = Produto = Estoque = Venda = ItemVenda = MockModel()
     supabase = None
     start_sync = stop_sync = force_sync = get_sync_status = lambda: None
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Carrega usuário para o Flask-Login"""
+    try:
+        if SUPABASE_AVAILABLE:
+            return Usuario.get_by_id(user_id)
+        else:
+            # Usuário mock para desenvolvimento
+            class MockUser:
+                def __init__(self, user_id):
+                    self.id = user_id
+                    self.is_authenticated = True
+                    self.is_active = True
+                    self.is_anonymous = False
+                
+                def get_id(self):
+                    return str(self.id)
+            
+            return MockUser(user_id)
+    except Exception as e:
+        logger.error(f"Erro ao carregar usuário {user_id}: {e}")
+        return None
 
 def criar_usuario_padrao():
     """Cria usuário padrão se não existir"""

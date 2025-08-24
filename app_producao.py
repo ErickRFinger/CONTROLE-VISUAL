@@ -162,10 +162,14 @@ def save_image(file):
 @app.route('/')
 def index():
     """Dashboard principal - redireciona para login se não autenticado"""
-    if not current_user.is_authenticated:
-        return redirect(url_for('login'))
-    
     try:
+        # Verificar se o usuário está autenticado
+        if not current_user.is_authenticated:
+            logger.info("Usuário não autenticado, redirecionando para login")
+            return redirect(url_for('login'))
+        
+        logger.info("Usuário autenticado, carregando dashboard")
+        
         # Estatísticas
         total_clientes = len(Cliente.get_all())
         total_produtos = len(Produto.get_all())
@@ -192,8 +196,79 @@ def index():
                              sync_status=sync_status)
     except Exception as e:
         logger.error(f"Erro no dashboard: {e}")
-        flash(f'Erro ao carregar dashboard: {e}', 'error')
-        return render_template('index.html')
+        # Em caso de erro, mostrar página simples
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Erro - Sistema Empresarial</title>
+            <meta charset="utf-8">
+        </head>
+        <body>
+            <h1>⚠️ Erro no Dashboard</h1>
+            <p>Erro: {e}</p>
+            <hr>
+            <p><a href="/login">← Ir para login</a></p>
+            <p><a href="/teste">← Teste</a></p>
+        </body>
+        </html>
+        """
+
+@app.route('/teste')
+def teste():
+    """Rota de teste simples"""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Teste - Sistema Empresarial</title>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <h1>🧪 TESTE FUNCIONANDO!</h1>
+        <p>✅ O Flask está rodando corretamente!</p>
+        <p>🔧 Agora vamos verificar a rota raiz...</p>
+        <hr>
+        <p><a href="/">← Tentar rota raiz</a></p>
+        <p><a href="/login">← Ir para login</a></p>
+    </body>
+    </html>
+    """
+
+@app.route('/debug')
+def debug():
+    """Rota de debug para verificar o status"""
+    try:
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Debug - Sistema Empresarial</title>
+            <meta charset="utf-8">
+        </head>
+        <body>
+            <h1>🔍 DEBUG - Sistema Empresarial</h1>
+            <hr>
+            <h2>Status da Aplicação:</h2>
+            <p><strong>Flask:</strong> ✅ Funcionando</p>
+            <p><strong>Supabase:</strong> {'✅ Disponível' if SUPABASE_AVAILABLE else '❌ Não disponível'}</p>
+            <p><strong>Usuário atual:</strong> {current_user.is_authenticated if current_user else 'Não logado'}</p>
+            <p><strong>Timestamp:</strong> {datetime.now()}</p>
+            <hr>
+            <h2>Rotas disponíveis:</h2>
+            <ul>
+                <li><a href="/">/ (Dashboard)</a></li>
+                <li><a href="/login">/login</a></li>
+                <li><a href="/teste">/teste</a></li>
+                <li><a href="/debug">/debug</a></li>
+            </ul>
+            <hr>
+            <p><a href="/">← Voltar para Dashboard</a></p>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"Erro no debug: {e}"
 
 # Rotas de autenticação
 @app.route('/login', methods=['GET', 'POST'])

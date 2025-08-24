@@ -90,9 +90,11 @@ def save_image(file):
 
 # Rotas principais
 @app.route('/')
-@login_required
 def index():
-    """Dashboard principal"""
+    """Dashboard principal - redireciona para login se não autenticado"""
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
+    
     try:
         # Estatísticas
         total_clientes = len(Cliente.get_all())
@@ -690,20 +692,28 @@ def teste_clientes():
 if __name__ == '__main__':
     logger.info("🚀 Iniciando Sistema Empresarial - VERSÃO PRODUÇÃO")
     
-    # Testar conexão com Supabase
-    if supabase.test_connection():
-        logger.info("✅ Conexão com Supabase estabelecida!")
-
-        # Criar usuário padrão
-        criar_usuario_padrao()
-
-        # Iniciar sincronização automática
-        logger.info("🔄 Iniciando sistema de sincronização...")
-        start_sync()
-
+    try:
+        # Testar conexão com Supabase
+        if supabase.test_connection():
+            logger.info("✅ Conexão com Supabase estabelecida!")
+            
+            # Criar usuário padrão
+            criar_usuario_padrao()
+            
+            # Iniciar sincronização automática
+            logger.info("🔄 Iniciando sistema de sincronização...")
+            start_sync()
+        else:
+            logger.warning("⚠️ Conexão com Supabase falhou, mas continuando...")
+            
+            # Criar usuário padrão mesmo sem Supabase
+            criar_usuario_padrao()
+        
         # Iniciar aplicação
         logger.info("🌐 Iniciando servidor Flask para produção...")
         app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
-    else:
-        logger.error("❌ Falha na conexão com Supabase!")
-        logger.error("Verifique suas credenciais em config_supabase.py")
+        
+    except Exception as e:
+        logger.error(f"❌ Erro na inicialização: {e}")
+        logger.info("🌐 Iniciando servidor Flask mesmo com erro...")
+        app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
